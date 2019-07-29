@@ -4,7 +4,7 @@ const compose = require("koa-compose");
 
 const checkPermission = require("unloop-check-permission");
 
- module.exports = ({root, routes, loginPath, scheme}) => {
+ module.exports = function({root, routes, loginPath, scheme}) {
     loginPath = loginPath ? loginPath : '/login';
     scheme = scheme ? scheme : 'roles';
 
@@ -17,8 +17,7 @@ const checkPermission = require("unloop-check-permission");
         used.push(middleware);
     }
 
-    this.middleware = (scheme) =>
-    {
+    this.middleware = () => {
         let routeMiddleware;
 
         if (routes) {
@@ -30,21 +29,23 @@ const checkPermission = require("unloop-check-permission");
 
                 authRouter.all(route.route, compose([...route.middleware, async (ctx, next) =>
                     {
-                        if (!checkPermission[scheme](ctx, route.permissions)) {
+                        if (checkPermission[scheme](ctx, route.permissions)) {
+                            return await next();
+                        }
+
+                        if (!ctx.isAuthenticated()) {
                             ctx.redirect(`${loginPath}?redirect=${encodeURIComponent(ctx.url)}`);
                         } else {
-                            await next();
+                            ctx.body = "Forbidden";
+                            ctx.status = 403;
                         }
                     }])
                 );
             }
-            
+
             routeMiddleware = authRouter.middleware();
         }
 
-        return routeMiddleware ? compose([routeMiddleware, used, static(root)]) : static(root);
+        return routeMiddleware ? compose([...used, routeMiddleware, static(root)]) : static(root);
     }
-
-
-
 }

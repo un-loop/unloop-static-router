@@ -1,6 +1,6 @@
 {
   "name": "unloop-static-router",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "koa static router with authorization",
   "main": "index.js",
   "scripts": {
